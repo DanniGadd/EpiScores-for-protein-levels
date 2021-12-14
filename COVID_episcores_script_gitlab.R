@@ -9,7 +9,7 @@ library(readxl)
 library(lme4)
 
 # Load covid data from archie
-t <- read_excel("C:/Users/s1888864/Desktop/Offline_train/2021-09-03 C19 cases Feb.xlsx")
+t <- read_excel("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/COVID_update/2021-09-03 C19 cases Feb.xlsx")
 t <- as.data.frame(t)
 
 # Take a look at variables available in this file (including those without DNAm data)
@@ -21,12 +21,64 @@ table(t$icu) # 6 in ICU
 e <- t %>% filter(t$covid == "1") 
 names(e)[1] <- "Sample_Name"
 
+# > dim(e)
+# [1] 554   8
+
+# Now add in age at covid 
+g <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/COVID_update/C19_test_dates_25Oct2021.csv")
+names(g)[1] <- "Sample_Name"
+
+e2 <- merge(e, g, by.x = 'Sample_Name', all.x = TRUE)
+
+hasAntiBD <- !is.na(e2$S3_AntiBD_Year)
+hasSwab <- !is.na(e2$S3_SwabDate_Year)
+hasLinkedTest <- !is.na(e2$Linked_TestDate)
+
+# Remove individuals who reported having covid in CL1 but not in CL2
+Mismatch <- (e2$Had_COVID > 0) & (!e2$S2_Had_COVID > 0)
+
+# Replace NA with 0 in covidLife1And2Mismatch
+Mismatch[is.na(Mismatch)] <- 0
+e2 <- e2[!Mismatch, ] # only one person has been removed - 553 now 
+
+
+# Read in appt table to extract all baseline appointment dates (not just those in CovidLife)
+apptTable <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/COVID_update/2021-07-30_appt.csv")
+
+apptToTargetTableIndex <- match(e2$Sample_Name, apptTable$id)
+apptDateString <- apptTable[apptToTargetTableIndex, 'appt']
+
+# Extract Date from first half of the timestamp
+apptDate <- lapply(apptDateString, function(x) {as.Date(strsplit(x, ' ')[[1]][[1]], '%Y-%m-%d')})
+
+# Use date from the following sources if available: linked test, antibd, swab. Else use an approximate date of 01/01/2021
+covidDate <- lapply(1:nrow(e2), function(rowName) {
+  row <- e2[rowName, ]
+  if (!is.na(row$Linked_TestDate)) {
+    as.Date(row$Linked_TestDate, '%Y-%m-%d')
+  } else if (!is.na(row$S3_AntiBD_Year)) {
+    as.Date(paste(row$S3_AntiBD_Year, row$S3_AntiBD_Month, row$S3_AntiBD_Day, sep = '/'), '%Y/%m/%d')
+  } else if (!is.na(row$S3_SwabDate_Year)) {
+    as.Date(paste(row$S3_SwabDate_Year, row$S3_SwabDate_Month, row$S3_SwabDate_Day, sep = '/'), '%Y/%m/%d')
+  } else {
+    as.Date('2021-01-01', '%Y-%m-%d')
+  }
+})
+
+# Difference between appointment (baseline) date and covid date
+covidApptDiff <- sapply(1:length(apptDate), function(i) {as.numeric(covidDate[[i]] - apptDate[[i]]) / 365})
+
+######################################################
+
 # Load the episcores d1 file that is rank transformed 
-d1 <- read.csv("C:/Users/s1888864/Desktop/Offline_train/d1_080321.csv", check.names = F)
+d1 <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/COVID_update/d1_080321.csv", check.names = F)
 
 # Join episcores file into those with covid 
-d2 <- left_join(e, d1, by = "Sample_Name")
+d2 <- left_join(e2, d1, by = "Sample_Name")
 dim(d2)
+
+# > dim(d2)
+# [1] 553 251
 
 # How many individuals have episcore data 
 table(is.na(d2$SMPD1))
@@ -34,17 +86,23 @@ table(is.na(d2$SMPD1))
 table(d2$smr)
 # 29 cases
 
+######################################################
+
+# Add covid appt difference onto baseline age
+d2$covidAge <- d2$Age + covidApptDiff
+
+######################################################
 
 library(glm2)
 
 d2$smr <- as.factor(d2$smr)
 results <- data.frame(episcore = "X", outcome = "X", n = "X", Beta = "X", SE = "X", p = "X")
-markers <- colnames(d2)[117:226]
+markers <- colnames(d2)[133:242]
 outcome <- "hospitalised covid"
 
-for (i in 1:length(markers)){
+for (i in 1:110){
      name <- as.character(markers[i])
-     m <- glm(smr ~ scale(d2[,name]) + scale(Age) + factor(Female), data = d2, 
+     m <- glm(smr ~ scale(d2[,name]) + scale(covidAge) + factor(Female), data = d2, 
      family = binomial)
 
      Beta <- coef(summary(m))[2,1]
@@ -72,56 +130,15 @@ top <- result[which(result$p < 0.05),] # 6 associations - which dont have the tr
 
 
 # Add annotation context 
-anno <- read_excel("C:/Users/s1888864/Desktop/Offline_train/Annotations_for_reference.xlsx")
+anno <- read_excel("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/COVID_update/Annotations_for_reference.xlsx")
 anno <- as.data.frame(anno)
 anno <- anno[c(1,4,18,13)]
 names(anno)[1] <- "episcore"
 
 result <- left_join(result, anno, by = "episcore")
 
+result <- result[-which(result$episcore == "IL.12B"),]
 
 # Write off results file 
-write.csv(result, "C:/Users/s1888864/Desktop/Offline_train/result_glm_covid_only_060921.csv", row.names = F)
-
-
-## Check family associations present in the dataset 
-
-# Read in the prepped file to cluster 
-ped <- read.csv("C:/Users/s1888864/Desktop/Offline_train/pedigree_formatted.csv")
-
-# Join pedigree info to the main dataset as per example above 
-names(ped)[2] <- "Sample_Name"
-d3 <- left_join(d2, ped, by = "Sample_Name")
-
-d4 <- d3[which(d3$SMPD1 != "NA"),]
-
-length(unique(d4$famid))
-
-table(d4$famid)
-
-t <- d4[which(d4$famid == "1885"),]
-
-## Join both results files for long covid and hospitalisations 
-
-library(tidyverse)
-library(readxl)
-
-hosp <- read.csv("Y:/Danni/COVID/result_glm_covid_only_060921.csv")
-
-long <- read.csv("Y:/Danni/COVID/result_glm_long_covid_150921.csv")
-
-# match the order of episcores in the long covid file to the hosp file 
-
-long <- long[match(hosp$episcore, long$episcore),]
-
-# remove uniprot annotations 
-
-hosp <- hosp[c(1:6)]
-long <- long[c(1:6)]
-
-# join results together 
-
-res <- cbind(hosp, long)
-write.csv(res, "Y:/Danni/COVID/result_suppl_table_covid_joint_131021.csv", row.names = F)
-
+write.csv(result, "/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/COVID_update/results/result_glm_hospitalisations_041121.csv", row.names = F)
 
