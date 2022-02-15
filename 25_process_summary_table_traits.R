@@ -60,40 +60,40 @@ breast <- breast %>% select("Sample_Name", "Age", "Female", "dead", "aged", "Eve
 # Double chec case numbers are correct 
 
 check <- AD %>% filter(Event == "1")
-nrow(check) #55
+nrow(check) 
 
 check <- bowel %>% filter(Event == "1")
-nrow(check) #74
+nrow(check) 
 
 check <- stroke %>% filter(Event == "1")
-nrow(check) #248
+nrow(check) 
 
 check <- RA %>% filter(Event == "1")
-nrow(check) #55
+nrow(check) 
 
 check <- pain %>% filter(Event == "1")
-nrow(check) #567
+nrow(check) 
 
 check <- lung %>% filter(Event == "1")
-nrow(check) #200
+nrow(check) 
 
 check <- IHD %>% filter(Event == "1")
-nrow(check) #360
+nrow(check) 
 
 check <- diab %>% filter(Event == "1")
-nrow(check) #185
+nrow(check) 
 
 check <- depr %>% filter(Event == "1")
-nrow(check) #85
+nrow(check) 
 
 check <- IBD %>% filter(Event == "1")
-nrow(check) #144
+nrow(check) 
 
 check <- COPD %>% filter(Event == "1")
-nrow(check) #280
+nrow(check) 
 
 check <-breast %>% filter(Event == "1")
-nrow(check) #120
+nrow(check) 
 
 
 # Find the maximum time to event across all the individuals and traits 
