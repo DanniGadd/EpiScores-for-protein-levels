@@ -1,3 +1,9 @@
+Copyright (c) <2022>, <DanniGadd>
+All rights reserved.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory.
+
 ### read in the supplementary table - worksheet saved as a CSV file from Danni's supp files ###
 d = read.csv("U:/Datastore/IGMM/marioni-lab/Riccardo/Danni_paper_EpiScores_08March2021/Supplementary_Tables_040321_DG_fully_vs_wbc_vs_grim.csv")
 
