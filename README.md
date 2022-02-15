@@ -11,5 +11,6 @@ The code follows the following naming order:
 4) "validation_" - this refers to the collation of which episcores passed robust thresholds in STRADL & LBC1921 test sets
 5) "cox_" - this refers to the cox modelling between episcores and incident disease onset in Generation Scotland
 6) "process_" - these scripts have been used to process and plot the results
+7) "covid_" - these scripts detail the covid-19 specific analyses in the manuscript 
 
 This project is licensed under the terms of the MIT license.
