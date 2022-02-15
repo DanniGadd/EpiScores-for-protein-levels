@@ -1,3 +1,9 @@
+Copyright (c) <2022>, <DanniGadd>
+All rights reserved.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory.
+
 ############################################################################################
 ############################################################################################
 ################# INPUT PREP KORA TRAINING #################################################
@@ -15,6 +21,7 @@ library(foreign)
 
 ###################################
 # load KORA data
+
 #load proteins 
 load("PROTEINSraw.RData")
 
@@ -73,9 +80,9 @@ id_table <- read.delim("id_table.txt")
 
 #match the SNP ids to the CpG ids
 rownames(KORAsnps)=id_table$cpg_id[match(rownames(KORAsnps),id_table$snp_id)]
+
 #ensure the renaming was done correctly
 identical(rownames(KORAsnps),colnames(PROTEINSraw))
-
 
 fvalid = 0.1 # fraction of data to be set aside for validation
 
@@ -91,17 +98,16 @@ set.seed(4711)
 #x = t(mvalue)
 x = t(betas)
 
-
 ## preprocess methylation data 
 ## Replace NA with imputed values with CpGs as columns 
 #number of NA before imputation
 length(which(is.na(x)==TRUE))
+
 #number of NA before impuation
 x <- na_mean(x)
 
 #number of NA after imputation
 length(which(is.na(x)==TRUE))
-
 
 # Scale the methylation dataset with CpGs as columns
 zwi = rownames(x)
@@ -116,8 +122,6 @@ xvalid = x[ixvalid,]
 # log transform protein data
 logPro=log(PROTEINSraw)
 d<-t(logPro)
-
-
 
 #residualize
 d=as.data.frame(d)
