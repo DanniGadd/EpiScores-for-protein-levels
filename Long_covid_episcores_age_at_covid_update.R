@@ -100,6 +100,17 @@ covidApptDiff <- sapply(1:length(apptDate), function(i) {as.numeric(covidDate[[i
 # Add covid appt difference onto baseline age
 e2$covidAge <- e2$Age + covidApptDiff
 
+# Assign difference as extra column
+e2$covidDiff <- covidApptDiff
+
+# filter to just smr cases 
+e2_smr <- e2[which(e2$binary %in% "1"),] # 56 cases
+
+# calculate mean difference 
+mean <- mean(e2_smr$covidDiff, na.rm = T) # 11.2088
+sd <- sd(e2_smr$covidDiff) # 1.2365
+
+
 # Run glm() models with the binary variable
 library(glm2)
 

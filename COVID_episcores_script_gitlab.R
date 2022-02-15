@@ -91,6 +91,19 @@ table(d2$smr)
 # Add covid appt difference onto baseline age
 d2$covidAge <- d2$Age + covidApptDiff
 
+# Assign difference as extra column
+d2$covidDiff <- covidApptDiff
+
+# filter to just smr cases 
+d2_smr <- d2[which(d2$smr %in% "1"),] # 29 cases
+
+# calculate mean difference 
+mean <- mean(d2_smr$covidDiff, na.rm = T) # 11.864
+sd <- sd(d2_smr$covidDiff) # 1.354
+
+# find minimum follow up difference 
+
+
 ######################################################
 
 library(glm2)
