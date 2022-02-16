@@ -1,0 +1,60 @@
+### This script is a record of projections and weights used in the study 
+
+# I have collated files below so that we can make sure the projections match those that 
+# are generated once in MethylDetectR 
+
+library(tidyverse)
+library(readxl)
+
+###############################################################################
+
+# EpiScore projections taken from cox model script EpiScore prep section
+
+###############################################################################
+
+# LBC proxies in GS
+LBC <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/Model_projections/GS_combined_9537_projections.csv")
+
+# LBC list to keep 
+list1 <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/Correlations_test_sets/LBC_list_of_proteins_for_cox_models.csv")
+list1 <- filter(list1, Protein != "IL.12B") # make sure IL.12B removed here 
+
+# Get only LBC proxies passing list 
+names <- LBC[1]
+prots <- LBC[,which(colnames(LBC) %in% list1$Protein)]
+LBC <- cbind(names, prots)
+
+# KORA proxies in GS 
+KORA <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/Model_projections/KORA_GS_combined_9537_projections.csv", check.names = F)
+
+# list of those to keep 
+list2 <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/Correlations_test_sets/KORA_correlations_in_STRADL_filtered.csv")
+
+# Get only those passing list 
+names <- KORA[1]
+prots <- KORA[,which(colnames(KORA) %in% list2$SeqId)]
+KORA <- cbind(names, prots)
+names(KORA)[1] <- "ID"
+
+# Join the proxies together based on DNAm_id
+pred <- left_join(LBC, KORA, by = "ID")
+
+write.csv(pred, "/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/A_record_of_weights_projections/EpiScore_projections_GS_9537.csv", row.names = F)
+
+###############################################################################
+
+# Weights files used in EpiScore projections scripts
+
+###############################################################################
+
+# LBC weights 
+cpgs1 <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/Extract_weights/predictors_joint_to_phenotypes_230221.csv", check.names = F)
+cpgs1 <- cpgs1[which(cpgs1$Predictor %in% list1$Protein),] # filter to just the 25 episcores taken forward 
+
+# KORA weights 
+cpgs2 <- read.csv("/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/Correlations_test_sets/Linker_file_protein_naming_corrected_with_annotation.csv")
+cpgs2 <- cpgs2[which(cpgs2$SeqId %in% list2$SeqId),] # filter to just the 84 episcores taken forward 
+
+# Write out weights files used in study
+write.csv(cpgs1, "/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/A_record_of_weights_projections/LBC_weights_finalised_120121.csv", row.names = F)
+write.csv(cpgs2, "/Cluster_Filespace/Marioni_Group/Danni/LBC_proteins_Jan2021/00_Running_pQTLs_regressed/A_record_of_weights_projections/KORA_weights_finalised_120121.csv", row.names = F)
